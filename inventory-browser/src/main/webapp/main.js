@@ -91,7 +91,7 @@ $(document).ready(function () {
     };
 
     // --- Click handler for refreshing details
-    var refreshDetails = function () {
+    var refreshDetails = function (alignMap) {
         var thingId = $("#details").attr("thingId");
         $.getJSON("api/1/things/" + thingId)
             .done(function (thing, status) {
@@ -123,6 +123,9 @@ $(document).ready(function () {
                             populateDetails(cell, feature.properties,
                                 "https://demos.apps.bosch-iot-cloud.com/historian/history/embeddedview/" + thingId + "/features/" + featureId + "/properties/");
                         }
+                        if (alignMap && featureId == "geolocation" && "geoposition" in feature.properties) {           
+                            map.setView(new L.LatLng(feature.properties.geoposition.latitude, feature.properties.geoposition.longitude), 13);
+                        }                       
                     });
                 }
 
@@ -215,7 +218,7 @@ $(document).ready(function () {
                             marker.bindPopup(t.thingId);
                             marker.on("click", function (e) {
                                 $("#details").attr("thingId", e.target._thingId);
-                                refreshDetails();
+                                refreshDetails(false);
                             });
                             marker.addTo(markers);
                             if (defaultMarker && currentlySelected) {
@@ -226,7 +229,7 @@ $(document).ready(function () {
                 }
 
                 if ($("#details").attr("thingId")) {
-                    refreshDetails();
+                    refreshDetails(false);
                 }
 
             });
@@ -252,7 +255,7 @@ $(document).ready(function () {
             .fail(failHandler)
             .done(function () {
                 $("#details").attr("thingId", thing.thingId);
-                refreshDetails();
+                refreshDetails(false);
             });
         };
 
@@ -309,7 +312,7 @@ $(document).ready(function () {
 
         // --- refresh thing details
         $("#details").attr("thingId", thingId);
-        refreshDetails();
+        refreshDetails(true);
     });
 
     refreshTable();
