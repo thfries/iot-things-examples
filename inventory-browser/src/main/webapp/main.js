@@ -121,7 +121,7 @@ $(document).ready(function () {
                             var cell = $("<td>");
                             row.append(cell);
                             populateDetails(cell, feature.properties,
-                                "https://demos.apps.bosch-iot-cloud.com/historian/history/embeddedview/" + thingId + "/features/" + featureId + "/properties/");
+                                "/historian/history/embeddedview/" + thingId + "/features/" + featureId + "/properties/");
                         }
                         if (alignMap && featureId == "geolocation" && "geoposition" in feature.properties) {           
                             map.setView(new L.LatLng(feature.properties.geoposition.latitude, feature.properties.geoposition.longitude), 13);

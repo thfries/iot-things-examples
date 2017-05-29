@@ -39,56 +39,16 @@
    </parent>
 
    <artifactId>inventory-browser</artifactId>
-   <packaging>war</packaging>
+   <packaging>pom</packaging>
    <name>Bosch IoT Things :: Inventory Browser Example</name>
    <description>Inventory Browser Web UI Example for Bosch IoT Things</description>
 
-   <dependencies>
-      <dependency>
-         <groupId>javax.servlet</groupId>
-         <artifactId>javax.servlet-api</artifactId>
-         <version>3.1.0</version>
-         <scope>provided</scope>
-      </dependency>
-      <dependency>
-          <groupId>org.mitre.dsmiley.httpproxy</groupId>
-          <artifactId>smiley-http-proxy-servlet</artifactId>
-          <version>1.7</version>
-      </dependency>
-      <dependency>
-         <groupId>org.apache.httpcomponents</groupId>
-         <artifactId>httpclient</artifactId>
-         <version>4.5</version>
-      </dependency>
-   </dependencies>
+   <properties>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+   </properties>
 
    <build>
       <plugins>
-         <plugin>
-            <groupId>org.apache.tomcat.maven</groupId>
-            <artifactId>tomcat7-maven-plugin</artifactId>
-            <version>2.1</version>
-            <executions>
-               <execution>
-                  <id>tomcat-run</id>
-                  <goals>
-                     <goal>exec-war-only</goal>
-                  </goals>
-                  <phase>package</phase>
-                  <configuration>
-                     <finalName>inventory-browser.jar</finalName>
-                  </configuration>
-               </execution>
-            </executions>
-         </plugin>
-         <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-war-plugin</artifactId>
-            <version>2.6</version>
-            <configuration>
-               <failOnMissingWebXml>false</failOnMissingWebXml>
-            </configuration>
-         </plugin>
          <plugin>
             <artifactId>maven-resources-plugin</artifactId>
             <version>2.6</version>
@@ -106,6 +66,10 @@
                            <directory>src/main/resources</directory>
                            <filtering>true</filtering>
                            <include>**/*.yml</include>
+                           <include>**/*.conf</include>
+                        </resource>
+                        <resource>
+                           <directory>src/main/webapp</directory>
                         </resource>
                      </resources>
                   </configuration>
