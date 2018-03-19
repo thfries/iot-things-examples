@@ -2,25 +2,25 @@
  *                                            Bosch SI Example Code License
  *                                              Version 1.0, January 2016
  *
- * Copyright 2016 Bosch Software Innovations GmbH ("Bosch SI"). All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
+ * Copyright 2017 Bosch Software Innovations GmbH ("Bosch SI"). All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
  * disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  * following disclaimer in the documentation and/or other materials provided with the distribution.
- * 
+ *
  * BOSCH SI PROVIDES THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO
- * THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF 
- * ALL NECESSARY SERVICING, REPAIR OR CORRECTION. THIS SHALL NOT APPLY TO MATERIAL DEFECTS AND DEFECTS OF TITLE WHICH 
+ * THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+ * ALL NECESSARY SERVICING, REPAIR OR CORRECTION. THIS SHALL NOT APPLY TO MATERIAL DEFECTS AND DEFECTS OF TITLE WHICH
  * BOSCH SI HAS FRAUDULENTLY CONCEALED. APART FROM THE CASES STIPULATED ABOVE, BOSCH SI SHALL BE LIABLE WITHOUT
  * LIMITATION FOR INTENT OR GROSS NEGLIGENCE, FOR INJURIES TO LIFE, BODY OR HEALTH AND ACCORDING TO THE PROVISIONS OF
  * THE GERMAN PRODUCT LIABILITY ACT (PRODUKTHAFTUNGSGESETZ). THE SCOPE OF A GUARANTEE GRANTED BY BOSCH SI SHALL REMAIN
- * UNAFFECTED BY LIMITATIONS OF LIABILITY. IN ALL OTHER CASES, LIABILITY OF BOSCH SI IS EXCLUDED. THESE LIMITATIONS OF 
+ * UNAFFECTED BY LIMITATIONS OF LIABILITY. IN ALL OTHER CASES, LIABILITY OF BOSCH SI IS EXCLUDED. THESE LIMITATIONS OF
  * LIABILITY ALSO APPLY IN REGARD TO THE FAULT OF VICARIOUS AGENTS OF BOSCH SI AND THE PERSONAL LIABILITY OF BOSCH SI'S
  * EMPLOYEES, REPRESENTATIVES AND ORGANS.
  */
@@ -51,7 +51,7 @@ $(document).ready(function () {
 
     var failHandler = function (jqxhr, status, error) {
         $('#autoRefresh').prop('checked', false);
-        window.alert("Server request failed.\n\n" + status + " " + error);
+        window.alert("Server request failed.\n\n" + status + " " + error + "\n\n" + jqxhr.responseText);
     };
 
     // --- Render object properties as nested table
@@ -64,7 +64,7 @@ $(document).ready(function () {
         var tbody = table.append($("<tbody>"));
 
         if (obj != null) {
-            var propNames = Object.getOwnPropertyNames(obj);
+            var propNames = Object.getOwnPropertyNames(obj).sort();
             propNames.forEach(function (prop) {
                 var value = obj[prop];
                 var row = $("<tr>");
@@ -81,6 +81,8 @@ $(document).ready(function () {
                     link.click(function () {
                         openPopupHistory(historyBaseUrl + (path + prop).replace("\.", "/"));
                     });
+                    var icon = $("<span>").addClass("glyphicon").addClass("glyphicon-time").css("padding-left", ".5em");
+                    link.append(icon);
                     row.append($("<td>").html(link));
                 } else {
                     row.append($("<td>").text(JSON.stringify(value, null, 3)));
@@ -90,16 +92,48 @@ $(document).ready(function () {
 
     };
 
+    function findNestedProperty(obj, key) {
+        if (obj == null) {
+            return undefined;
+        }
+        for (var prop in obj) {
+           if (obj.hasOwnProperty(prop)) {
+               var val = obj[prop];
+               if (prop === key) {
+                   return val;
+               }
+               if (val instanceof Array) {
+                   for (var i = 0; i < val.length; i++) {
+                       var result =  findNestedProperty(val[i], key);
+                       if (result != undefined) {
+                           return result;
+                       }
+                   }
+               }
+               if (typeof val === 'object') {
+                return findNestedProperty(obj[prop], key);
+            }
+         }
+        }
+        return undefined;
+    }
+
     // --- Click handler for refreshing details
     var refreshDetails = function (alignMap) {
         var thingId = $("#details").attr("thingId");
-        $.getJSON("api/1/things/" + thingId)
+        $.getJSON("api/2/things/" + thingId + "?fields=attributes%2Cfeatures%2C_modified%2C_policy")
             .done(function (thing, status) {
 
                 // --- clear table content and remember thingId
                 $("#detailsThingId").text(thingId);
                 var tablebody = $("#detailsTableBody");
                 tablebody.empty();
+
+                // --- last modified
+                var row = $("<tr>");
+                tablebody.append(row);
+                row.append($("<td>").text("Last modified"));
+                row.append($("<td>").text(new Date(thing._modified).toLocaleString()));
 
                 if ("attributes" in thing) {
                     // --- for each attribute put row in details table
@@ -111,8 +145,11 @@ $(document).ready(function () {
                     populateDetails(cell, thing.attributes);
                 }
                 if ("features" in thing) {
+
+                    var hasHistory = findNestedProperty(thing._policy, "iot-things:e072e13d-5a83-41b8-93b2-a6da22634886:historian") != undefined;
+
                     // --- for each feature property put row in details table
-                    Object.getOwnPropertyNames(thing.features).forEach(function (featureId) {
+                    Object.getOwnPropertyNames(thing.features).sort().forEach(function (featureId) {
                         var feature = thing.features[featureId];
                         if ("properties" in feature) {
                             var row = $("<tr>");
@@ -120,8 +157,9 @@ $(document).ready(function () {
                             row.append($("<td>").text("Feature \"" + featureId + "\""));
                             var cell = $("<td>");
                             row.append(cell);
-                            populateDetails(cell, feature.properties,
-                                "/historian/history/embeddedview/" + thingId + "/features/" + featureId + "/properties/");
+                            // var historyUrl = hasHistory ? "/historian/history/embeddedview/" + thingId + "/features/" + featureId + "/properties/" : undefined;
+                            var historyUrl = hasHistory ? "https://demos.s-apps.de1.bosch-iot-cloud.com/historian/history/embeddedview/" + thingId + "/features/" + featureId + "/properties/" : undefined;
+                            populateDetails(cell, feature.properties, historyUrl);
                         }
                         if (alignMap && featureId == "geolocation" && "geoposition" in feature.properties) {           
                             map.setView(new L.LatLng(feature.properties.geoposition.latitude, feature.properties.geoposition.longitude), 13);
@@ -142,8 +180,8 @@ $(document).ready(function () {
     // --- Click handler for refreshing list and map of things
     var refreshTable = function () {
 
-        $.getJSON("api/1/search/things"
-            + "?fields=thingId,features/geolocation,features/orientation,features/xdk-sensors"
+        $.getJSON("api/2/search/things"
+            + "?fields=thingId,features/description,features/geolocation,features/orientation,features/xdk-sensors"
             + "&option=limit(0,200),sort(%2BthingId)")
             .fail(failHandler)
             .done(function (data, status) {
@@ -165,7 +203,14 @@ $(document).ready(function () {
                     // --- add heading data to table
                     var row = $("<tr>");
                     row.attr("thingId", t.thingId);
-                    row.append($("<td>").text(t.thingId));
+                    if ("features" in t && "description" in t.features && "properties" in t.features.description && "displayName" in t.features.description.properties) {
+                        var td = $("<td>");
+                        td.text(t.features.description.properties.displayName);
+                        td.append($("<span class='idInfo'>").text("(" + t.thingId + ")"));
+                        row.append(td);
+                    } else {
+                        row.append($("<td>").text(t.thingId));
+                    }
                     $("#tableBody").append(row);
 
                     // --- when thing has a "geolocation" feature with "geoposition" properties
@@ -243,33 +288,53 @@ $(document).ready(function () {
     var createThing = function () {
 
         var created = function(thing, status) {
-            // include WRITE ACL for simulator-user (1d138250-49a8-11e6-826c-c2ae337e6688)
-            $.ajax("api/1/things/" + thing.thingId + "/acl/1d138250-49a8-11e6-826c-c2ae337e6688", {
+            // include WRITE permissions for simulator-user (1d138250-49a8-11e6-826c-c2ae337e6688) via implictly created policy for new Thing
+            $.ajax("api/2/policies/" + thing.thingId + "/entries/simulator", {
                 method: "PUT",
                 data: JSON.stringify({
-                    READ: false,
-                    WRITE: true,
-                    ADMINISTRATE: false
+                    subjects: { "iot-permissions:1d138250-49a8-11e6-826c-c2ae337e6688": { type: "iot-permissions-userid" } },
+                    resources: {
+                        "thing:/": {
+                            grant: [ "WRITE" ],
+                            revoke: []
+                        }
+                    }
                 })
             })
             .fail(failHandler)
             .done(function () {
-                $("#details").attr("thingId", thing.thingId);
-                refreshDetails(false);
-            });
+                // include READ permissions for historian-client (iot-things:e072e13d-5a83-41b8-93b2-a6da22634886:historian) via implictly created policy for new Thing
+                $.ajax("api/2/policies/" + thing.thingId + "/entries/historian", {
+                    method: "PUT",
+                    data: JSON.stringify({
+                        subjects: { "iot-things:e072e13d-5a83-41b8-93b2-a6da22634886:historian": { type: "iot-things-clientid" } },
+                        resources: {
+                            "thing:/": {
+                                grant: [ "READ" ],
+                                revoke: []
+                            }
+                        }
+                    })
+                })
+                .fail(failHandler)
+                .done(function () {
+                    $("#details").attr("thingId", thing.thingId);
+                    refreshDetails(false);
+                });
+            })
         };
 
         var thingId = window.prompt("Please enter Thing Id (e.g. \"com.acme:mydevice123\" or leave it empty to generate an id).\n\n"
-            +"You will have full access rights and the device simulator will have write access.");
+            +"You will have full access rights, the device simulator write access and historian read access.");
         if (thingId == "") {
-            $.ajax("api/1/things", {
+            $.ajax("api/2/things", {
                 method: "POST",
                 data: JSON.stringify({})
             })
             .fail(failHandler)
             .done(created);
         } else if (thingId != null) {
-            $.ajax("api/1/things/" + thingId, {
+            $.ajax("api/2/things/" + thingId, {
                 method: "PUT",
                 data: JSON.stringify({})
             })
@@ -280,7 +345,7 @@ $(document).ready(function () {
     // --- Click handler for showing simulator popup
     var simulateThing = function () {
         var thingId = $("#details").attr("thingId");
-        openPopupSimulator("https://demos.apps.bosch-iot-cloud.com/device-simulator?thingId=" + thingId);
+        openPopupSimulator("https://demos.s-apps.de1.bosch-iot-cloud.com/device-simulator/?thingId=" + thingId);
     };
 
     // --- create map

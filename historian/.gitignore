@@ -3,7 +3,8 @@ target/
 .idea
 *.iml
 **/config*.properties
-**/CRClient.jks
+**/*.jks
+db/
 mvnw*
 nbactions.xml
 .mvn
