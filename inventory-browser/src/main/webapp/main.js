@@ -182,7 +182,8 @@ $(document).ready(function () {
 
         $.getJSON("api/2/search/things"
             + "?fields=thingId,features/description,features/geolocation,features/orientation,features/xdk-sensors"
-            + "&option=limit(0,200),sort(%2BthingId)")
+            + "&option=limit(0,200),sort(%2BthingId)"
+            + "&namespaces=com.bosch.demo.amqp,de.tttt,de.gtm")
             .fail(failHandler)
             .done(function (data, status) {
 
@@ -324,7 +325,7 @@ $(document).ready(function () {
             })
         };
 
-        var thingId = window.prompt("Please enter Thing Id (e.g. \"com.acme:mydevice123\" or leave it empty to generate an id).\n\n"
+        var thingId = window.prompt("Please enter Thing Id (e.g. \"de.gtm:mydevice123\" or leave it empty to generate an id).\n\n"
             +"You will have full access rights, the device simulator write access and historian read access.");
         if (thingId == "") {
             $.ajax("api/2/things", {
