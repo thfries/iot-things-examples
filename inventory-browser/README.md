@@ -10,13 +10,10 @@ This example shows how to create a simple user interface to list things and thei
 
 # Configure your API Token and other settings
 
-Create or adjust file "src/main/resources/config.properties"
+Add the API Token into the nginx.conf file of the project.
 
 ```
-thingsServiceEndpointUrl=https://things.s-apps.de1.bosch-iot-cloud.com
-apiToken=### your Bosch IoT Things Solution API Token ###
-http.proxyHost=### your http proxy host, if you need one ###
-http.proxyPort=### your http proxy port, if you need one ###
+proxy_set_header x-cr-api-token "<<<place your Bosch IoT Things api-token here>>>";
 ```
 
 # Build
